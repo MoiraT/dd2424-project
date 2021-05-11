@@ -2,79 +2,43 @@ from tensorflow import keras
 from keras.layers import *
 from keras.models import *
 
-def Unet(input_size = (299, 299, 1)):
-    inputs = Input(input_size)
-    
-    #first level contracting path  
-    conv1_1 = Conv2D(filter=64, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(input)
-    conv1_2 = Conv2D(filter=64, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(conv1_1)
-    pool1_1 = MaxPooling2D(pool_size=(2,2))(conv1_2)
-    pool1_2 = Dropout(0.1)(pool1_1)
+class ContrLayer:
 
-    #second level contracting path 
-    conv2_1 = Conv2D(filter=64*2, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(pool1_2)
-    conv2_2 = Conv2D(filter=64*2, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(conv2_1)
-    pool2_1 = MaxPooling2D(pool_size=(2,2))(conv2_2)
-    pool2_2 = Dropout(0.1)(pool2_1)
+    def __init__(self, input_layer, factor, activ_func, kernel_initializer, dropout_rate):
+        self.conv1 = Conv2D(filter=64*factor, kernel_size=(3,3), activation=activ_func, padding=same, kernel_initializer=kernel_initializer)(input_layer)
+        self.conv2 = Conv2D(filter=64*factor, kernel_size=(3,3), activation=activ_func, padding=same, kernel_initializer=kernel_initializer)(self.conv_1)
+        self.pool = MaxPooling2D(pool_size=(2,2))(self.conv2)
+        self.output = Dropout(dropout_rate)(self.pool)
 
-    #third level contracting path 
-    conv3_1 = Conv2D(filter=64*4, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(pool2_2)
-    conv3_2 = Conv2D(filter=64*4, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(conv3_1)
-    pool3_1 = MaxPooling2D(pool_size=(2,2))(conv3_2)
-    pool3_2 = Dropout(0.1)(pool3_1)
+class ExpLayer:
 
-    #fouth level contracting path 
-    conv4_1 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(pool3_2)
-    conv4_2 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(conv4_1)
-    pool4_1 = MaxPooling2D(pool_size=(2,2))(conv4_2)
-    pool4_2 = Dropout(0.1)(pool4_1)
+    def __init__(self, input_layer, concat_layer, factor, activ_func, kernel_initializer, dropout_rate):
 
-    #fifth level bottom layer
-    conv5_1 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(pool4_2)
-    conv5_2 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(conv5_1)
+        self.deconv1 = Conv2DTranspose(filter=64*factor, kernel_size=(3,3), strides=(2,2) activation=activ_func, padding=same, kernel_initializer=kernel_initializer)(input_layer)
+        self.concat = concatenate([concat_layer, self.deconv1])
+        self.drop = Dropout(dropout_rate)(self.concat)
+        self.conv1 = Conv2D(filter=64*factor, kernel_size=(3,3), activation=activ_func, padding=same, kernel_initializer=kernel_initializer)(self.drop)
+        self.output = Conv2D(filter=64*factor, kernel_size=(3,3), activation=activ_func, padding=same, kernel_initializer=kernel_initializer)(self.conv1)
 
-    #fourth level expansive path
-    #conv2dtranspose instead of upsamling, do the same but conv2dtranspose is smarter but requires more resources
-    deconv4_1 = Conv2DTranspose(filter=64*8,  kernel_size=(3,3), strides=(2,2), activation="relu", padding=same, kernel_initializer="he_normal")(pool5_2)
-    econv4_2 = concatenate([deconv4_1, conv4_2])
-    epool4_2 = Dropout(0.1)(econv4_2)
-    econv4_1 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(epool4_2)
-    econv4_2 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(econv4_1)
+    def unet(self, input_size = (256, 256, 1)):
+        inputs = Input(input_size)
 
-    #third level espansive path
-    deconv3_1 = Conv2DTranspose(filter=64*4,  kernel_size=(3,3), strides=(2,2), activation="relu", padding=same, kernel_initializer="he_normal")(econv4_2)
-    econv3_2 = concatenate([deconv3_1, conv3_2])
-    epool3_2 = Dropout(0.1)(econv3_2)
-    econv3_1 = Conv2D(filter=64*4, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(epool3_2)
-    econv3_2 = Conv2D(filter=64*4, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(econv3_1)
+        #contracting path
+        layer1 = ContrLayer(inputs, 1, "relu", "he_normal", 0.5)
+        layer2 = ContrLayer(layer1.output, 2, "relu", "he_normal", 0.5)
+        layer3 = ContrLayer(layer2.output, 4, "relu", "he_normal", 0.5)
+        layer4 = ContrLayer(layer3.output, 8, "relu", "he_normal", 0.5)
 
-    #second level espansive path
-    deconv2_1 = Conv2DTranspose(filter=64*2,  kernel_size=(3,3), strides=(2,2), activation="relu", padding=same, kernel_initializer="he_normal")(econv3_2)
-    econv2_2 = concatenate([deconv2_1, conv2_2])
-    epool2_2 = Dropout(0.1)(econv2_2)
-    econv2_1 = Conv2D(filter=64*2, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(epool2_2)
-    econv2_2 = Conv2D(filter=64*2, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(econv2_1)
+        #bottom layer
+        layer5_1 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(layer4.output)
+        layer5_2 = Conv2D(filter=64*8, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(layer5_1)
 
-    #first level espansive path
-    deconv1_1 = Conv2DTranspose(filter=64*1,  kernel_size=(3,3), strides=(2,2), activation="relu", padding=same, kernel_initializer="he_normal")(econv2_2)
-    econv1_2 = concatenate([deconv1_1, conv1_2])
-    epool1_2 = Dropout(0.1)(econv1_2)
-    econv1_1 = Conv2D(filter=64*1, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(epool1_2)
-    econv1_2 = Conv2D(filter=64*1, kernel_size=(3,3), activation="relu", padding=same, kernel_initializer="he_normal")(econv1_1)
-    #last step
-    outputs = Conv2D(filter=1, kernel_size=(1,1), activation="sigmoid", padding=same)(econv1_2)
+        #expansive path
+        layer4 = ExpLayer(layer5_2, layer4.conv2, 8, "relu", "he_normal", 0.5)
+        layer3 = ExpLayer(layer4.output, layer3.conv2, 4, "relu", "he_normal", 0.5)
+        layer2 = ExpLayer(layer3.output, layer2.conv2, 2, "relu", "he_normal", 0.5)
+        layer1 = ExpLayer(layer2.output, layer1.conv2, 1, "relu", "he_normal", 0.5)
+        
+        outputs = Conv2D(filter=1, kernel_size=(1,1), activation="sigmoid", padding=same)(layer1.output)
 
-    model = Model(input = inputs, output = outputs)
-
-
-
-
-
-
-
-
-
-
-
-
-
+        model = Model(input = inputs, output = outputs)

@@ -1,5 +1,5 @@
 from unet import unet
+from preprocess import *
 
-print("yo")
-model = unet((256, 256, 1))
-print("hey")
+crop_images(10)
+#model = unet((256, 256, 1))

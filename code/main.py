@@ -1,16 +1,12 @@
 # From our files
 from unet import unet
 from plot_stuff import read_nii, plt_acc, plt_loss, view_samples, plt_segmented
+from augmentations import aug_ver1
 
 # Required libraries
 from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
-import cv2
-
-# Or else it'll be a warning bonanza
-import warnings
-warnings.filterwarnings("ignore")
 
 # Parameters
 TEST_SIZE = 0.1
@@ -23,40 +19,24 @@ data = pd.read_csv('../input/covid19-ct-scans/metadata.csv')
 data.head()
 
 # View some samples (saved in "kolla.png") as my GUI is being a dick
-view_samples(data, pic_number=1)
+view_samples(data, pic_number=2, slice_number=150)
+
 
 # Data augmentation
+imgs = data['ct_scan']
+masks = data['infection_mask']
+lungs, infections = aug_ver1(data, img_size, imgs, masks)
 
-def augmentate(data):
-    print("Starting augmentation")
-    lungs = []
-    infections = []
-    antal = 1  # len(data)
-    for i in range(antal):
-        ct = read_nii(data['ct_scan'][i])
-        infect = read_nii(data['infection_mask'][i])
-        for ii in range(ct.shape[0]):
-            lung_img = cv2.resize(ct[ii], dsize=(
-                img_size, img_size), interpolation=cv2.INTER_AREA).astype('uint8')
-            infec_img = cv2.resize(infect[ii], dsize=(
-                img_size, img_size), interpolation=cv2.INTER_AREA).astype('uint8')
-            lungs.append(lung_img[..., np.newaxis])
-            infections.append(infec_img[..., np.newaxis])
-    print("Augmentation done")
-    return lungs, infections
-
-
-lungs, infections = augmentate(data)
 lungs = np.array(lungs)
 infections = np.array(infections)
-print("Lung array shape: {}, infection array shape: {}".format(
+print("\nLung array shape: {}, infection array shape: {}".format(
     lungs.shape, infections.shape))
 
 # Split
 lung_train, lung_test, infect_train, infect_test = train_test_split(
-    lungs, infections, test_size=TEST_SIZE, shuffle=False)
+    lungs, infections, test_size=TEST_SIZE)
 
-print("Train set size: {}\nTest set size: {}".format(
+print("\nTrain set size: {}\nTest set size: {}".format(
     str(lung_train.shape[0]), str(lung_test.shape[0])))
 
 # Create and compile U-net
@@ -64,10 +44,11 @@ model = unet((img_size, img_size, 1))
 model.compile(loss="binary_crossentropy",
               optimizer="adam", metrics=["accuracy"])
 # model.summary()
-
+print("\nAaaand here we go with training the model...")
 history = model.fit(lung_train, infect_train, epochs=EPOCHS,
                     validation_data=(lung_test, infect_test))
 # steps_per_epoch=STEPS_PER_EPOCH
+print("\nModel finished training")
 
 # Plot results
 plt_acc(history)
@@ -75,4 +56,4 @@ plt_loss(history)
 
 # Segment new lungs with the trained U-net
 predicted = model.predict(lung_test)
-plt_segmented(lung_test, infect_test, predicted, 1)
+plt_segmented(lung_test, infect_test, predicted, -1)

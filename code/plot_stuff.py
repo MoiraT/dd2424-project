@@ -13,30 +13,30 @@ def read_nii(filepath):
     return(array)
 
 
-def view_samples(data, pic_number):
-    sample_ct = read_nii(data.loc[pic_number, 'ct_scan'])
-    sample_lung = read_nii(data.loc[pic_number, 'lung_mask'])
-    sample_infe = read_nii(data.loc[pic_number, 'infection_mask'])
-    sample_all = read_nii(data.loc[pic_number, 'lung_and_infection_mask'])
+def view_samples(data, pic_number, slice_number):
+    sample_ct = read_nii(data['ct_scan'][pic_number])
+    sample_lung = read_nii(data['lung_mask'][pic_number])
+    sample_infe = read_nii(data['infection_mask'][pic_number])
+    sample_all = read_nii(data['lung_and_infection_mask'][pic_number])
 
     fig = plt.figure(figsize=(18, 15))
     plt.subplot(1, 4, 1)
-    plt.imshow(sample_ct[..., 150], cmap='bone')
+    plt.imshow(sample_ct[..., slice_number], cmap='bone')
     plt.title('Original Image')
 
     plt.subplot(1, 4, 2)
-    plt.imshow(sample_ct[..., 150], cmap='bone')
-    plt.imshow(sample_lung[..., 150], alpha=0.5, cmap='nipy_spectral')
+    plt.imshow(sample_ct[..., slice_number], cmap='bone')
+    plt.imshow(sample_lung[..., slice_number], alpha=0.5, cmap='nipy_spectral')
     plt.title('Lung Mask')
 
     plt.subplot(1, 4, 3)
-    plt.imshow(sample_ct[..., 150], cmap='bone')
-    plt.imshow(sample_infe[..., 150], alpha=0.5, cmap='nipy_spectral')
+    plt.imshow(sample_ct[..., slice_number], cmap='bone')
+    plt.imshow(sample_infe[..., slice_number], alpha=0.5, cmap='nipy_spectral')
     plt.title('Infection Mask')
 
     plt.subplot(1, 4, 4)
-    plt.imshow(sample_ct[..., 150], cmap='bone')
-    plt.imshow(sample_all[..., 150], alpha=0.5, cmap='nipy_spectral')
+    plt.imshow(sample_ct[..., slice_number], cmap='bone')
+    plt.imshow(sample_all[..., slice_number], alpha=0.5, cmap='nipy_spectral')
     plt.title('Lung and Infection Mask')
 
     plt.savefig("kolla.png")
@@ -76,7 +76,8 @@ def plt_segmented(lung_test, infect_test, predicted, pic_number):
 
     plt.subplot(1, 3, 2)
     plt.imshow(lung_test[pic_number][..., 0], cmap='bone')
-    plt.imshow(infect_test[3][..., 0], alpha=0.5, cmap="nipy_spectral")
+    plt.imshow(infect_test[pic_number][..., 0],
+               alpha=0.5, cmap="nipy_spectral")
     plt.title('original infection mask')
 
     plt.subplot(1, 3, 3)

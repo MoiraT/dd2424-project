@@ -29,7 +29,7 @@ class ExpLayer:
 
 
 def unet(input_size):
-
+    print("\nBuilding U-net")
     input_layer = Input(input_size)
 
     # contracting path
@@ -54,5 +54,5 @@ def unet(input_size):
         1, 1), activation="sigmoid", padding="same")(layer1.output)
 
     model = Model(input_layer, output_layer)
-
+    print("U-net model built")
     return model

@@ -13,11 +13,11 @@ def read_nii(filepath):
     return(array)
 
 
-def view_samples(data):
-    sample_ct = read_nii(data.loc[1, 'ct_scan'])
-    sample_lung = read_nii(data.loc[1, 'lung_mask'])
-    sample_infe = read_nii(data.loc[1, 'infection_mask'])
-    sample_all = read_nii(data.loc[1, 'lung_and_infection_mask'])
+def view_samples(data, pic_number):
+    sample_ct = read_nii(data.loc[pic_number, 'ct_scan'])
+    sample_lung = read_nii(data.loc[pic_number, 'lung_mask'])
+    sample_infe = read_nii(data.loc[pic_number, 'infection_mask'])
+    sample_all = read_nii(data.loc[pic_number, 'lung_and_infection_mask'])
 
     fig = plt.figure(figsize=(18, 15))
     plt.subplot(1, 4, 1)
@@ -44,17 +44,19 @@ def view_samples(data):
 
 
 def plt_acc(history):
+    fig = plt.figure(figsize=(18, 15))
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
     plt.title('Accuracy vs Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend(['Train', 'Val'], loc='upper left')
-    plt.savefig("Acc_vs_epoch.png")
+    plt.savefig("acc_vs_epoch.png")
     print("Plot of accuracy vs epochs saved as acc_vs_epoch.png")
 
 
 def plt_loss(history):
+    fig = plt.figure(figsize=(18, 15))
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('Loss vs Epochs')

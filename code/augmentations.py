@@ -13,7 +13,7 @@ def read_nii(filepath):
     return(array)
 
 
-def aug_ver1(data, img_size, imgs, masks):
+def load_sideways(data, img_size, imgs, masks):
     print("\nStarting augmentation...")
     lungs = []
     infections = []
@@ -26,7 +26,26 @@ def aug_ver1(data, img_size, imgs, masks):
                 img_size, img_size), interpolation=cv2.INTER_AREA).astype('uint8')
             infec_img = cv2.resize(infect[ii], dsize=(
                 img_size, img_size), interpolation=cv2.INTER_AREA).astype('uint8')
-            lungs.append(lung_img[..., np.newaxis])
-            infections.append(infec_img[..., np.newaxis])
+            lungs.append(lung_img)
+            infections.append(infec_img)
+    print("Augmentation done")
+    return lungs, infections
+
+
+def load_slices(data, img_size, imgs, masks):
+    print("\nStarting augmentation...")
+    lungs = []
+    infections = []
+    antal = imgs.shape[0]
+    for i in range(antal):
+        ct = read_nii(imgs[i])
+        infect = read_nii(masks[i])
+        for ii in range(ct.shape[2]):
+            lung_img = cv2.resize(ct[..., ii], dsize=(
+                img_size, img_size)).astype('uint8')
+            infec_img = cv2.resize(infect[..., ii], dsize=(
+                img_size, img_size)).astype('uint8')
+            lungs.append(lung_img)
+            infections.append(infec_img)
     print("Augmentation done")
     return lungs, infections

@@ -12,10 +12,10 @@ allow_growth = True
 
 # Parameters
 TEST_SIZE = 0.1
-EPOCHS = 1
+EPOCHS = 5
 STEPS_PER_EPOCH = 64
 IMG_SIZE = 128
-N_IMGS = 1
+N_IMGS = 20
 
 # Load data
 metadata = pandas.read_csv('../input/covid19-ct-scans/metadata.csv')
@@ -63,9 +63,5 @@ with open(hist_csv_file, mode='w') as f:
 
 # Segment new lungs with the trained U-net and plot them
 segmented = model.predict(scan_test)
-n_imgs = scan_test.shape[0]
-plots = int(n_imgs/20)
-for i in range(20):
-    factor = plots * i
-    plt_segmented(scan_test, mask_test, segmented,
-                  [factor, factor+1, factor+2, factor+3], "result_slice_" + str(i+1) + ".png")
+n_plots = 20
+plot_many_segmented(n_plots, scan_test, mask_test, segmented)

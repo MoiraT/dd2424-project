@@ -122,3 +122,12 @@ def plt_segmented(lung_test, infect_test, predicted, pic_numbers, filename):
 
     plt.savefig("../plots/" + filename)
     print("Segmented images saved as {}".format(filename))
+
+
+def plot_many_segmented(n_plots, scan_test, mask_test, segmented):
+    total_imgs = scan_test.shape[0]
+    blocks = int(total_imgs/n_plots)
+    for i in range(n_plots):
+        factor = n_plots * i
+        plt_segmented(scan_test, mask_test, segmented,
+                      [factor, factor+1, factor+2, factor+3], "result_slice_" + str(i+1) + ".png")

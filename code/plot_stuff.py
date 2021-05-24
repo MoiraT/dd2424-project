@@ -1,128 +1,124 @@
+
+import nibabel
+import numpy
 import matplotlib.pyplot as plt
-import nibabel as nib
-import numpy as np
 
 
-def read_nii(filepath):
-    '''
-    Reads .nii file and returns pixel array
-    '''
-    ct_scan = nib.load(filepath)
-    array = ct_scan.get_fdata()
-    array = np.rot90(np.array(array))
-    return(array)
+def unpack(folder):
+    ct_scan = nibabel.load(folder)
+    imgs = numpy.rot90(numpy.array(ct_scan.get_fdata()))
+    return(imgs)
 
 
 def view_slices(data, pic_number):
-    sample_ct = read_nii(data['ct_scan'][pic_number])
-    sample_lung = read_nii(data['lung_mask'][pic_number])
-    sample_infe = read_nii(data['infection_mask'][pic_number])
-    sample_all = read_nii(data['lung_and_infection_mask'][pic_number])
+    scans = unpack(data['ct_scan'][pic_number])
+    infect = unpack(data['infection_mask'][pic_number])
 
-    total_slices = sample_ct.shape[2]
-    slice_idxs = [0, int(total_slices/2), -1]
+    total_slices = scans.shape[2]
+
+    slice_idxs = [int(total_slices*0.2), int(total_slices/2),
+                  int(total_slices*0.8)]
     n_slices = len(slice_idxs)
 
-    fig = plt.figure(figsize=(18, 15))
+    fig = plt.figure(figsize=(20, 20))
+    fig.suptitle(
+        "First, middlest and last slice of the same lung scan", fontsize="30")
 
     for i in range(n_slices):
-        plt.subplot(n_slices, 4, 4*i + 1)
-        plt.imshow(sample_ct[..., slice_idxs[i]], cmap='bone')
-        plt.title('Original Image')
+        plt.subplot(n_slices, 2, 2*i + 1)
+        plt.axis("off")
+        plt.imshow(scans[..., slice_idxs[i]])
+        plt.title('CT scan', fontsize=25)
 
-        plt.subplot(n_slices, 4, 4*i + 2)
-        plt.imshow(sample_ct[..., slice_idxs[i]], cmap='bone')
-        plt.imshow(sample_lung[..., slice_idxs[i]],
-                   alpha=0.5, cmap='nipy_spectral')
-        plt.title('Lung Mask')
+        plt.subplot(n_slices, 2, 2*i + 2)
+        plt.axis("off")
+        plt.imshow(scans[..., slice_idxs[i]])
+        plt.imshow(infect[..., slice_idxs[i]],
+                   cmap='nipy_spectral', alpha=0.6)
+        plt.title('Covid infection mask over CT scan', fontsize=25)
 
-        plt.subplot(n_slices, 4, 4*i + 3)
-        plt.imshow(sample_ct[..., slice_idxs[i]], cmap='bone')
-        plt.imshow(sample_infe[..., slice_idxs[i]],
-                   alpha=0.5, cmap='nipy_spectral')
-        plt.title('Infection Mask')
-
-        plt.subplot(n_slices, 4, 4*i + 4)
-        plt.imshow(sample_ct[..., slice_idxs[i]], cmap='bone')
-        plt.imshow(sample_all[..., slice_idxs[i]],
-                   alpha=0.5, cmap='nipy_spectral')
-        plt.title('Lung and Infection Mask')
-
-    plt.savefig("slices.png")
+    plt.savefig("../plots/slices.png")
     print("Slices saved in slices.png")
 
 
 def plt_acc(history):
-    fig = plt.figure(figsize=(18, 15))
+    fig = plt.figure(figsize=(20, 20))
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
     plt.title('Accuracy vs Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend(['Train', 'Val'], loc='upper left')
-    plt.savefig("acc_vs_epoch.png")
+    plt.savefig("../plots/acc_vs_epoch.png")
     print("Plot of accuracy vs epochs saved as acc_vs_epoch.png")
 
 
 def plt_loss(history):
-    fig = plt.figure(figsize=(18, 15))
+    fig = plt.figure(figsize=(20, 20))
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
     plt.title('Loss vs Epochs')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend(['Train', 'Val'], loc='upper right')
-    plt.savefig("loss_vs_epoch.png")
+    plt.savefig("../plots/loss_vs_epoch.png")
     print("Plot of loss vs epochs saved as loss_vs_epoch.png")
 
 
-def plt_pics_from_side(lung_test, infect_test, pic_numbers, filename):
-    fig = plt.figure(figsize=(18, 15))
+def view_data(pic_idxs, scans, infect, filename):
 
-    n_pics = len(pic_numbers)
+    fig = plt.figure(figsize=(20, 20))
+    fig.suptitle(
+        "Four scans from the set and their infection masks", fontsize="30")
+    n_pics = len(pic_idxs)
     for i in range(n_pics):
 
         plt.subplot(n_pics, 3, 3*i+1)
-        plt.imshow(lung_test[pic_numbers[i]], cmap='bone')
-        plt.title('original lung')
+        plt.axis("off")
+        plt.imshow(scans[pic_idxs[i]], cmap="bone")
+        plt.title('CT scan', fontsize=25)
 
         plt.subplot(n_pics, 3, 3*i+2)
-        plt.imshow(lung_test[pic_numbers[i]], cmap='bone')
-        plt.imshow(infect_test[pic_numbers[i]],
-                   alpha=0.5, cmap="nipy_spectral")
-        plt.title('original infection mask and lung')
+        plt.axis("off")
+        plt.imshow(scans[pic_idxs[i]], cmap="bone")
+        plt.imshow(infect[pic_idxs[i]],
+                   alpha=0.5, cmap='nipy_spectral')
+        plt.title('Ground truth infection mask', fontsize=25)
 
         plt.subplot(n_pics, 3, 3*i+3)
-        plt.imshow(infect_test[pic_numbers[i]],
-                   alpha=0.5, cmap="nipy_spectral")
-        plt.title('original infection mask only')
+        plt.axis("off")
+        plt.imshow(infect[pic_idxs[i]], alpha=0.5, cmap='nipy_spectral')
+        plt.title('Infection mask only', fontsize=25)
 
-    plt.savefig(filename)
-    print("Sideways images saved as {}".format(filename))
+    plt.savefig("../plots/" + filename)
+    print("Images saved as data.png")
 
 
 def plt_segmented(lung_test, infect_test, predicted, pic_numbers, filename):
-    fig = plt.figure(figsize=(18, 15))
+    fig = plt.figure(figsize=(20, 20))
+    fig.suptitle(
+        "The original infection masks and the predicted one", fontsize="30")
 
     n_pics = len(pic_numbers)
     for i in range(n_pics):
 
         plt.subplot(n_pics, 3, 3*i+1)
-        plt.imshow(lung_test[pic_numbers[i]], cmap='bone')
-        plt.title('original lung')
+        plt.axis("off")
+        plt.imshow(lung_test[pic_numbers[i]], cmap="bone")
+        plt.title('CT scan', fontsize=25)
 
         plt.subplot(n_pics, 3, 3*i+2)
-        plt.imshow(lung_test[pic_numbers[i]], cmap='bone')
+        plt.axis("off")
+        plt.imshow(lung_test[pic_numbers[i]], cmap="bone")
         plt.imshow(infect_test[pic_numbers[i]],
-                   alpha=0.5, cmap="nipy_spectral")
-        plt.title('original infection mask')
+                   alpha=0.5, cmap='nipy_spectral')
+        plt.title('Ground truth infection mask', fontsize=25)
 
         plt.subplot(n_pics, 3, 3*i+3)
-        plt.imshow(infect_test[pic_numbers[i]],
-                   alpha=0.5, cmap="nipy_spectral")
-        # plt.imshow(lung_test[pic_number][..., 0], cmap='bone')
-        # plt.imshow(predicted[pic_number][..., 0], alpha=0.5, cmap="nipy_spectral")
-        plt.title('predicted infection mask')
+        plt.axis("off")
+        plt.imshow(lung_test[pic_numbers[i]], cmap="bone")
+        plt.imshow(predicted[pic_numbers[i]], alpha=0.5, cmap='nipy_spectral')
+        plt.title('Segmented infection mask', fontsize=25)
 
-    plt.savefig(filename)
+    plt.savefig("../plots/" + filename)
     print("Segmented images saved as {}".format(filename))
